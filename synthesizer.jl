@@ -1,9 +1,30 @@
 using Printf
 using Base.Iterators: product
 
+function generate_candidates_from_cfg(grammar, symbol, max_depth)
+    if max_depth == 0 || !haskey(grammar, symbol)
+        return symbol in keys(grammar) ? [] : [Symbol(symbol)]
+    end
 
+    results = []
+    for production in grammar[symbol]
+        combinations = []
+        for part in production
+            push!(combinations, generate_candidates_from_cfg(grammar, part, max_depth - 1))
+        end
+        for combination in Iterators.product(combinations...)
+            if length(production) == 1
+                push!(results, combination[1])
+            else
+                push!(results, Expr(:call, combination...))
+            end
+        end
+   end
 
-function generate_candidates(dsl::DSL, arguments::Array{Symbol, 1}, max_depth::Int)
+    return results
+end
+
+function generate_candidates_from_primitives(dsl::DSL, arguments::Array{Symbol, 1}, max_depth::Int)
     # Create an array of sets for each depth level
     # Vector{Any}[] instead of []
     depth_exprs = [[] for _ in 0:max_depth]
@@ -52,9 +73,34 @@ function evaluate_candidates(candidates, examples)
     return scores
 end
 
+function evaluate_candidates_with_dsl(candidates, dsl::DSL, examples)
+    scores = Dict()
+    for candidate in candidates
+        scores[candidate] = 0
+        for example in examples
+            inputs, output = example
+            if evaluate_with_dsl(candidate, dsl, inputs) == output
+                scores[candidate] += 1
+            end
+        end
+    end
+    return scores
+end
+
+# from primitives
 function search(dsl::DSL, examples, arguments::Array{Symbol, 1}, max_depth::Int)
-    candidates = generate_candidates(dsl, arguments, max_depth)
-    print(candidates)
+    candidates = generate_candidates_from_primitives(dsl, arguments, max_depth)
+    println(candidates)
+    scores = evaluate_candidates(candidates, examples)
+    best_candidate = argmax(scores)
+    return best_candidate
+end
+
+# from CFG
+function search(dsl::DSL, examples, arguments::Vector{Vector{String}}, max_depth::Int)
+    dsl.grammar["CONST"] = arguments
+    candidates = generate_candidates_from_cfg(dsl.grammar, "PROG", max_depth)
+    println(candidates)
     scores = evaluate_candidates(candidates, examples)
     best_candidate = argmax(scores)
     return best_candidate

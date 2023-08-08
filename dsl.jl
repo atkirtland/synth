@@ -5,6 +5,7 @@ struct Primitive
 end
 
 struct DSL
+    grammar::Dict{String, Vector{Vector{String}}}
     primitives::Vector{Primitive}
 end
 
@@ -33,7 +34,13 @@ end
 # Example of defining a new DSL and adding some primitives
 # The user would have to do something similar to define their own DSL
 function create_example_dsl()
-    dsl = DSL([])
+    grammar = Dict(
+        "PROG" => [["EXPR"]],
+        "EXPR" => [["CONST"], ["OP2", "EXPR", "EXPR"]],
+        "OP2" => [["add"], ["subtract"], ["multiply"]],
+    )
+    # dsl = DSL([])
+    dsl = DSL(grammar, [])
 
     # below are same
     # add_primitive!(dsl, "add", (a,b) -> a + b, 2)
