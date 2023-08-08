@@ -24,13 +24,13 @@ function generate_candidates_from_cfg(grammar, symbol, max_depth)
     return results
 end
 
-function generate_candidates_from_primitives(dsl::DSL, arguments::Array{Symbol, 1}, max_depth::Int)
+function generate_candidates_from_primitives(dsl::DSL, arguments::Vector{String}, max_depth::Int)
     # Create an array of sets for each depth level
     # Vector{Any}[] instead of []
     depth_exprs = [[] for _ in 0:max_depth]
 
     # Initialize depth 0 set with arguments and 0-arity primitives
-    depth_exprs[1] = [arg for arg in arguments]
+    depth_exprs[1] = [Symbol(arg) for arg in arguments]
     for primitive in dsl.primitives
         if primitive.arity == 0
             push!(depth_exprs[1], Expr(:call, Symbol(primitive.name)))
@@ -73,13 +73,13 @@ function evaluate_candidates(candidates, examples)
     return scores
 end
 
-function evaluate_candidates_with_dsl(candidates, dsl::DSL, examples)
+function evaluate_candidates_meta(candidates, dsl::DSL, examples)
     scores = Dict()
     for candidate in candidates
         scores[candidate] = 0
         for example in examples
             inputs, output = example
-            if evaluate_with_dsl(candidate, dsl, inputs) == output
+            if evaluate_meta(candidate, dsl, inputs) == output
                 scores[candidate] += 1
             end
         end
@@ -87,21 +87,29 @@ function evaluate_candidates_with_dsl(candidates, dsl::DSL, examples)
     return scores
 end
 
-# from primitives
-function search(dsl::DSL, examples, arguments::Array{Symbol, 1}, max_depth::Int)
-    candidates = generate_candidates_from_primitives(dsl, arguments, max_depth)
-    println(candidates)
-    scores = evaluate_candidates(candidates, examples)
-    best_candidate = argmax(scores)
-    return best_candidate
-end
+function search(
+    config::Dict{String},
+    dsl::DSL, 
+    examples, 
+    arguments::Vector{String}, 
+    max_depth::Int
+    )
 
-# from CFG
-function search(dsl::DSL, examples, arguments::Vector{Vector{String}}, max_depth::Int)
-    dsl.grammar["CONST"] = arguments
-    candidates = generate_candidates_from_cfg(dsl.grammar, "PROG", max_depth)
+    if config["cfg"]
+        dsl.grammar["CONST"] = [[k] for k in arguments]
+        candidates = generate_candidates_from_cfg(dsl.grammar, "PROG", max_depth)
+    else
+        candidates = generate_candidates_from_primitives(dsl, arguments, max_depth)
+    end
+
     println(candidates)
-    scores = evaluate_candidates(candidates, examples)
+    
+    if config["meta"]
+        scores = evaluate_candidates_meta(candidates, dsl, examples)
+    else
+        scores = evaluate_candidates(candidates, examples)
+    end
+
     best_candidate = argmax(scores)
     return best_candidate
 end

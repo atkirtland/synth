@@ -19,3 +19,24 @@ function evaluate(expr::Expr, inputs::Dict{Symbol, Int64})
         error("Unsupported expression type")
     end
 end
+
+function evaluate_meta(sym::Symbol, dsl::DSL, inputs::Dict{Symbol, Int64})
+    return inputs[sym]
+end
+
+function evaluate_meta(expr::Expr, dsl::DSL, inputs::Dict{Symbol, Int64})
+    primitive_definitions = Expr(:block)
+    for primitive in dsl.primitives
+        push!(primitive_definitions.args, :(const $(Symbol(primitive.name)) = $(primitive.func)))
+    end
+
+    input_definitions = Expr(:block)
+    for (key, value) in inputs
+        push!(input_definitions.args, :($key = $(value)))
+    end
+
+    complete_expr = Expr(:block, primitive_definitions, input_definitions, expr)
+
+    # @debug println(complete_expr)
+    return @eval $(complete_expr)
+end
