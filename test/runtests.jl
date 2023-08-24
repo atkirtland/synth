@@ -1,6 +1,8 @@
 using Test
 using Logging
-Logging.global_logger(SimpleLogger(stdout, Logging.Debug))
+# Logging.global_logger(SimpleLogger(stdout, Logging.Debug))
+
+using synth
 
 # Run Tests
 @testset "Program Synthesizer Tests" begin

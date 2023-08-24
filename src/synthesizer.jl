@@ -1,6 +1,8 @@
 using Printf
 using Base.Iterators: product
 
+include("utils.jl")
+
 function generate_candidates_from_cfg(grammar, symbol, max_depth)
     if max_depth == 0 || !haskey(grammar, symbol)
         return symbol in keys(grammar) ? [] : [Symbol(symbol)]
@@ -59,13 +61,13 @@ function generate_candidates_from_primitives(dsl::DSL, arguments::Vector{String}
 end
 
 
-function evaluate_candidates(candidates, examples)
+function evaluate_candidates(candidates, dsl::DSL, examples)
     scores = Dict()
     for candidate in candidates
         scores[candidate] = 0
         for example in examples
             inputs, output = example
-            if evaluate(candidate, inputs) == output
+            if evaluate(candidate, dsl, inputs) == output
                 scores[candidate] += 1
             end
         end
@@ -102,12 +104,12 @@ function search(
         candidates = generate_candidates_from_primitives(dsl, arguments, max_depth)
     end
 
-    println(candidates)
+    @debug println(candidates)
     
     if config["meta"]
         scores = evaluate_candidates_meta(candidates, dsl, examples)
     else
-        scores = evaluate_candidates(candidates, examples)
+        scores = evaluate_candidates(candidates, dsl, examples)
     end
 
     best_candidate = argmax(scores)

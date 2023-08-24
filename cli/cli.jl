@@ -1,5 +1,7 @@
 using ArgParse
 
+using synth
+
 function parse_commandline()
     s = ArgParseSettings()
 
@@ -11,6 +13,10 @@ function parse_commandline()
         help = "use CFG based generation instead of arity/primitives"
         arg_type = Bool
         default = true
+        "--max_depth"
+        help = "maximum depth of generated programs"
+        arg_type = Int
+        default = 5
     end
 
     return parse_args(s)
