@@ -1,14 +1,14 @@
 # synth
 
-A program synthesizer in Julia
+A (quickly written) program synthesizer in Julia
 
-As of August, 2023: bottom-up, enumerative PBE
+As of August, 2023: enumerative PBE given a DSL
 
 ## TODO
 
 - observational equivalence
 - consider symmetry of commutative operations
-- top-down search
+- options for bottom-up and top-down search
 - recursion
 
 ## Usage
