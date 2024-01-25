@@ -35,8 +35,7 @@ end
 function create_example_dsl()
     grammar = Dict(
         "PROG" => [["EXPR"]],
-        "EXPR" => [["CONST"], ["OP2", "EXPR", "EXPR"]],
-        "OP2" => [["add"], ["subtract"], ["multiply"]],
+        "EXPR" => [["CONST"], ["add", "EXPR", "EXPR"], ["subtract", "EXPR", "EXPR"], ["multiply", "EXPR", "EXPR"]],
     )
     # dsl = DSL([])
     dsl = DSL(grammar, [])

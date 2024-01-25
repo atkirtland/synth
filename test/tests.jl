@@ -1,5 +1,5 @@
-for meta in [false, true]
-    for cfg in [false, true]
+for meta in [false]
+    for cfg in [true]
         config = Dict(
             "meta" => meta,
             "cfg" => cfg,

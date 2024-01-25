@@ -3,6 +3,80 @@ using Base.Iterators: product
 
 include("utils.jl")
 
+
+function synthesize(dsl::DSL, inputs, outputs)
+    # plist = dsl.grammar["CONST"]
+    plist = Set{Union{Expr,Symbol}}([Symbol(var[1]) for var in dsl.grammar["CONST"]])
+    while (true)
+        @debug println(plist)
+        plist = grow(dsl, plist)
+        @debug println("bar", plist)
+        plist = elimEquivalents(dsl, plist, inputs)
+        for p in plist
+            if isCorrect(dsl, p, inputs, outputs)
+                return p
+            end
+        end
+    end
+end
+
+function grow(dsl::DSL, plist::Set{Union{Expr,Symbol}})
+    # new_plist = dsl.grammar["CONST"]
+    new_plist = Set{Union{Expr,Symbol}}([Symbol(var[1]) for var in dsl.grammar["CONST"]])
+    for option in dsl.grammar["EXPR"]
+        if option[1] == "CONST"
+            continue
+        end
+        for p1 in plist
+            for p2 in plist
+                push!(new_plist, Expr(:call, Symbol(option[1]), p1, p2))
+            end
+        end
+    end
+    return new_plist
+end
+
+function elimEquivalents(dsl::DSL, plist::Set{Union{Expr,Symbol}}, inputs)
+    outputSet = Set([])
+    programSet = Set{Union{Expr,Symbol}}([])
+    for p in plist
+        outputs = (evaluate(p, dsl, input) for input in inputs)
+        if outputs in outputSet
+            continue
+        end
+        push!(outputSet, outputs)
+        push!(programSet, p)
+    end
+    return programSet
+end
+
+function isCorrect(dsl::DSL, p, inputs, outputs)
+    for (input, output) in zip(inputs, outputs)
+        if evaluate(p, dsl, input) != output
+            return false
+        end
+    end
+    return true
+end
+
+
+function search(
+    config::Dict{String},
+    dsl::DSL, 
+    examples, 
+    arguments::Vector{String}, 
+    max_depth::Int
+    )
+
+    if config["cfg"] && !config["meta"]
+        dsl.grammar["CONST"] = [[k] for k in arguments]
+        inputs, outputs = collect(zip(examples...))
+        synthesize(dsl, inputs, outputs)
+    end
+end
+
+## pre-OE
+
 function generate_candidates_from_cfg(grammar, symbol, max_depth)
     if max_depth == 0 || !haskey(grammar, symbol)
         return symbol in keys(grammar) ? [] : [Symbol(symbol)]
@@ -23,7 +97,7 @@ function generate_candidates_from_cfg(grammar, symbol, max_depth)
         end
    end
 
-    return results
+   return results
 end
 
 function generate_candidates_from_primitives(dsl::DSL, arguments::Vector{String}, max_depth::Int)
@@ -86,7 +160,7 @@ function evaluate_candidates_meta(candidates, dsl::DSL, examples)
     return scores
 end
 
-function search(
+function search_noOE(
     config::Dict{String},
     dsl::DSL, 
     examples, 
