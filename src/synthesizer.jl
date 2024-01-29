@@ -71,7 +71,8 @@ function search(
     if config["cfg"] && !config["meta"]
         dsl.grammar["CONST"] = [[k] for k in arguments]
         inputs, outputs = collect(zip(examples...))
-        synthesize(dsl, inputs, outputs)
+        p = synthesize(dsl, inputs, outputs)
+        return p
     end
 end
 
